@@ -1,0 +1,28 @@
+apply plugin: 'com.android.library'
+
+group='com.afollestad'
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion '25.0.0'
+
+    defaultConfig {
+        minSdkVersion 8
+        targetSdkVersion 23
+        versionCode 1
+        versionName "0.8.3.0"
+        consumerProguardFiles 'progress-proguard.txt'
+    }
+    lintOptions {
+        abortOnError false
+        checkReleaseBuilds false
+    }
+}
+
+dependencies {
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile 'com.android.support:appcompat-v7:23.1.0'
+    compile 'com.android.support:recyclerview-v7:23.1.0'
+    compile 'com.android.support:support-annotations:23.0.1'
+    compile 'me.zhanghai.android.materialprogressbar:library:1.1.4'
+}
