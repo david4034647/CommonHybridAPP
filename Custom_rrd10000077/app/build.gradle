@@ -3,14 +3,14 @@ apply plugin: 'com.android.application'
 android {
     signingConfigs {
         config {
-            keyAlias '亚厚定制馆'
+            keyAlias 'key0'
             keyPassword '123456'
-            storeFile file('../yahoudingzhiguan.jks')
+            storeFile file('../commonhybridapp.jks')
             storePassword '123456'
         }
     }
-    compileSdkVersion 23
-    buildToolsVersion '25.0.0'
+    compileSdkVersion 26
+    buildToolsVersion '26.0.2'
     defaultConfig {
         applicationId "com.weiba.commonhybridapp"
         minSdkVersion 16
@@ -33,18 +33,28 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:23.0.3'
-    compile 'com.android.support:support-v4:23.0.3'
     compile project(':share_wxpay_library')
+    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile files('libs/MobCommons-2017.0914.1125.jar')
+    compile files('libs/MobTools-2017.0914.1125.jar')
+    compile files('libs/ShareSDK-Core-3.1.0.jar')
+    compile files('libs/ShareSDK-Wechat-3.1.0.jar')
+    compile files('libs/ShareSDK-Wechat-Core-3.1.0.jar')
+    compile files('libs/ShareSDK-Wechat-Favorite-3.1.0.jar')
+    compile files('libs/ShareSDK-Wechat-Moments-3.1.0.jar')
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.0.0'
+    compile 'com.android.support:support-v4:23.0.0'
     //gson解析
-    compile 'com.google.code.gson:gson:2.7'
+    compile 'com.google.code.gson:gson:2.8.0'
     //Retrofit2
-    compile 'com.squareup.retrofit2:retrofit:2.1.0'
-    compile 'com.squareup.retrofit2:adapter-rxjava:2.1.0'
-    compile 'com.squareup.retrofit2:converter-gson:2.1.0'
+    //compile 'com.squareup.retrofit2:retrofit:2.1.0'
+    //compile 'com.squareup.retrofit2:adapter-rxjava:2.1.0'
+    //compile 'com.squareup.retrofit2:converter-gson:2.1.0'
     //RxJava and RxAndroid
-    compile 'io.reactivex:rxandroid:1.1.0'
-    compile 'io.reactivex:rxjava:1.1.0'
+    //compile 'io.reactivex:rxandroid:1.1.0'
+    //compile 'io.reactivex:rxjava:1.1.0'
+    implementation files('libs/ShareSDK-Alipay-3.1.0.jar')
+    implementation files('libs/ShareSDK-Alipay-Core-3.1.0.jar')
+    implementation files('libs/ShareSDK-Alipay-Moments-3.1.0.jar')
 }

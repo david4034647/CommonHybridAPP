@@ -1,5 +1,12 @@
 package com.weiba.web.sharelibrary.bean;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.text.TextUtils;
+import android.util.Base64;
+
+import java.io.UnsupportedEncodingException;
+
 /**
  * Created by Gyueqi on 16/7/14.
  */
@@ -16,6 +23,25 @@ public class WebShareBean {
     private String desc;
     private String link;
     private String imgUrl;
+
+    private String imgDataStr;
+    private Bitmap imgBitmap;
+
+    public String getImgDataStr() {
+        return imgDataStr;
+    }
+
+    public void setImgDataStr(String imgDataStr) {
+        this.imgDataStr = imgDataStr;
+    }
+
+    public Bitmap getImgBitmap() {
+        return imgBitmap;
+    }
+
+    public void setImgBitmap(Bitmap imgBitmap) {
+        this.imgBitmap = imgBitmap;
+    }
 
     public String getTitle() {
         return title;
@@ -46,6 +72,31 @@ public class WebShareBean {
     }
 
     public void setImgUrl(String imgUrl) {
-        this.imgUrl = imgUrl;
+        if (TextUtils.isEmpty(imgUrl)) {
+            return;
+        }
+
+        String tmpImgStr;
+        if (!imgUrl.startsWith("data:image")) {
+            this.imgUrl = imgUrl;
+            return;
+
+        }
+
+        int index = imgUrl.indexOf("data:image/png;base64,");
+        tmpImgStr = imgUrl.substring(22);
+        if (TextUtils.isEmpty(tmpImgStr)) {
+            return;
+        }
+
+        this.imgDataStr = imgUrl;
+        byte[] imgArray = new byte[0];
+        try {
+            imgArray = Base64.decode(tmpImgStr.getBytes("utf-8"), Base64.DEFAULT);
+        } catch (UnsupportedEncodingException e) {
+            e.printStackTrace();
+        }
+        Bitmap imgBitmap = BitmapFactory.decodeByteArray(imgArray, 0, imgArray.length);
+        this.imgBitmap = imgBitmap;
     }
 }

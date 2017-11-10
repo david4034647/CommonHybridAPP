@@ -34,11 +34,6 @@ import android.widget.Toast;
 
 import com.google.gson.Gson;
 import com.tandong.bottomview.view.BottomView;
-import com.tencent.mm.sdk.modelpay.PayReq;
-import com.tencent.mm.sdk.openapi.IWXAPI;
-import com.tencent.mm.sdk.openapi.WXAPIFactory;
-import com.umeng.socialize.UMShareAPI;
-import com.umeng.socialize.bean.SHARE_MEDIA;
 import com.weiba.commonhybridapp.R;
 import com.weiba.web.sharelibrary.adapter.BVAdapter;
 import com.weiba.web.sharelibrary.bean.WchatPayEntity;
@@ -49,7 +44,11 @@ import com.weiba.web.sharelibrary.util.WebToolUtil;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 
-public class MainActivity extends AppCompatActivity {
+import cn.sharesdk.onekeyshare.OnekeyShare;
+import cn.sharesdk.wechat.friends.Wechat;
+import cn.sharesdk.wechat.moments.WechatMoments;
+
+public class MainActivity extends AppCompatActivity implements WebView.OnLongClickListener {
     private final static String TAG = MainActivity.class.getSimpleName();
 
     private Toolbar mToolbar;
@@ -68,7 +67,6 @@ public class MainActivity extends AppCompatActivity {
             updateUI();
         }
     };
-    private IWXAPI api;
     private boolean showShare;
     private boolean isNeedReload;
     private Uri imageUri = Uri.EMPTY;
@@ -77,7 +75,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        api = WXAPIFactory.createWXAPI(MainActivity.this, Constants.WX_APP_ID);
+
+        shareBean = new WebShareBean();
+        //WebUrl = "https://www.baidu.com/";
         initView();
     }
 
@@ -117,7 +117,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        UMShareAPI.get(this).onActivityResult(requestCode, resultCode, data);
 
         if (requestCode != 1) {
             return;
@@ -144,7 +143,8 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_sharing:
-                initBottomView();
+                //initBottomView();
+                showShareMenu();
                 break;
             case R.id.action_refresh:
                 mWebView.reload();
@@ -180,6 +180,41 @@ public class MainActivity extends AppCompatActivity {
         return super.onPrepareOptionsPanel(view, menu);
     }
 
+    ////////////////// WebView LongClickListener ////////////////////
+    @Override
+    public boolean onLongClick(View v) {
+        if (v == null || !(v instanceof WebView)) {
+            return false;
+        }
+
+        WebView.HitTestResult testResult = ((WebView)v).getHitTestResult();
+        if (testResult == null) {
+            return false;
+        }
+
+        int type = testResult.getType();
+        if (type == WebView.HitTestResult.UNKNOWN_TYPE) {
+            return false;
+        }
+
+        if (type == WebView.HitTestResult.EDIT_TEXT_TYPE) {
+            return true;
+        }
+
+        if (type == WebView.HitTestResult.SRC_ANCHOR_TYPE) {
+            Log.d(TAG, "hit test result 超链接 [" + testResult.getExtra() + "]");
+            shareBean.setLink(testResult.getExtra());
+        }
+
+        if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == WebView.HitTestResult.IMAGE_TYPE) {
+            Log.d(TAG, "hit test result 图片 [" + testResult.getExtra() + "]");
+            shareBean.setImgUrl(testResult.getExtra());
+            initBottomView();
+        }
+
+        return true;
+    }
+
     ///////////////// Customize Method /////////////////
     private void initView() {
         mToolbar = (Toolbar) this.findViewById(R.id.toolbar);
@@ -211,13 +246,12 @@ public class MainActivity extends AppCompatActivity {
         webSettings.setAllowFileAccess(true);
         //设置支持缩放
         webSettings.setBuiltInZoomControls(true);
-//        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-//            mWebView.setWebContentsDebuggingEnabled(true);
-//        }
+
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         mWebView.addJavascriptInterface(new JsInteraction(), "androidShare");
         mWebView.setWebChromeClient(new MyWebChromeClient());
         mWebView.setWebViewClient(new MyWebViewClient());
+        mWebView.setOnLongClickListener(this);
         mWebView.loadUrl(WebUrl);
     }
 
@@ -289,34 +323,10 @@ public class MainActivity extends AppCompatActivity {
     private void initBottomView() {
         final GridView lv_menu_list;
         final ArrayList<String> menus = new ArrayList<>();
-
-        showShare = WebToolUtil.showShare(SHARE_MEDIA.WEIXIN_CIRCLE);
-        if (showShare) {
-            menus.add("朋友圈");
-        }
-
-        showShare = WebToolUtil.showShare(SHARE_MEDIA.WEIXIN);
-        if (showShare) {
-            menus.add("微信");
-        }
-
-        showShare = WebToolUtil.showShare(SHARE_MEDIA.QZONE);
-        if (showShare) {
-            menus.add("QQ空间");
-        }
-
-        showShare = WebToolUtil.showShare(SHARE_MEDIA.QQ);
-        if (showShare) {
-            menus.add("QQ");
-        }
-
-        showShare = WebToolUtil.showShare(SHARE_MEDIA.SINA);
-        if (showShare) {
-            menus.add("新浪微博");
-        }
-
+        menus.add("微信");
+        menus.add("朋友圈");
         menus.add("复制链接");
-        menus.add("二维码");
+        //menus.add("二维码");
         final BottomView bv = new BottomView(this,
                 R.style.BottomViewTheme_Default, R.layout.bottom_view);
         bv.setAnimation(R.style.BottomToTopAnim);//设置动画，可选
@@ -356,39 +366,97 @@ public class MainActivity extends AppCompatActivity {
                         SHARE_TYPE = Constants.QRCODE;
                         break;
                 }
+                shareByType(SHARE_TYPE);
                 bv.dismissBottomView();
             }
         });
     }
 
+    private void shareByType(int shareType) {
+        OnekeyShare oks = new OnekeyShare();
+        switch (shareType) {
+            case Constants.WEIXIN_CIRCLE:
+                oks.setImageUrl(shareBean.getImgUrl());
+                oks.setImageData(shareBean.getImgDataStr());
+                oks.setTitleUrl(shareBean.getLink());
+                oks.setText("text");
+                oks.setTitle("标题");
+
+                oks.setPlatform(WechatMoments.NAME);
+                oks.show(MainActivity.this);
+                break;
+            case Constants.WEIXIN:
+                oks.setImageUrl(shareBean.getImgUrl());
+                oks.setImageData(shareBean.getImgDataStr());
+                oks.setTitleUrl(shareBean.getLink());
+                oks.setText("text");
+                oks.setTitle("标题");
+
+                oks.setPlatform(Wechat.NAME);
+                oks.show(MainActivity.this);
+
+                break;
+            default:
+                break;
+        }
+
+    }
+
+    private void showShareMenu() {
+        OnekeyShare oks = new OnekeyShare();
+        //关闭sso授权
+        oks.disableSSOWhenAuthorize();
+
+        // 分享时Notification的图标和文字  2.5.9以后的版本不调用此方法
+        //oks.setNotification(R.drawable.ic_launcher, getString(R.string.app_name));
+        // title标题，印象笔记、邮箱、信息、微信、人人网和QQ空间使用
+        oks.setTitle("ShareSDK分享");
+        // titleUrl是标题的网络链接，仅在人人网和QQ空间使用
+        oks.setTitleUrl("https://www.sharesdk.cn");
+        // text是分享文本，所有平台都需要这个字段
+        oks.setText("我是分享文本");
+        // imagePath是图片的本地路径，Linked-In以外的平台都支持此参数
+        //oks.setImagePath("/sdcard/test.jpg");//确保SDcard下面存在此张图片
+        // url仅在微信（包括好友和朋友圈）中使用
+        oks.setUrl("https://www.sharesdk.cn");
+        // comment是我对这条分享的评论，仅在人人网和QQ空间使用
+        oks.setComment("我是测试评论文本");
+        // site是分享此内容的网站名称，仅在QQ空间使用
+        oks.setSite(getString(R.string.app_name));
+        // siteUrl是分享此内容的网站地址，仅在QQ空间使用
+        oks.setSiteUrl("https://www.sharesdk.cn");
+
+        // 启动分享GUI
+        oks.show(this);
+    }
 
     /**
      * 调起微信支付
      */
-    private void onWXPay(WchatPayEntity wchatPayEntity) {
-        api.registerApp(Constants.WX_APP_ID);
-        if (!api.isWXAppInstalled()) {
-            Toast.makeText(MainActivity.this, "没有安装微信", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        if (!api.isWXAppSupportAPI()) {
-            Toast.makeText(MainActivity.this, "当前版本不支持支付功能", Toast.LENGTH_SHORT).show();
-            return;
-        }
-        PayReq req = new PayReq();
-        //req.appId = "wxf8b4f85f3a794e77";  // 测试用appId
-        //req.appId			= wchatPayEntity.getAppid();
-        req.appId = wchatPayEntity.getAppid();
-        req.partnerId = wchatPayEntity.getMch_id();
-        req.prepayId = wchatPayEntity.getPrepay_id();
-        req.nonceStr = wchatPayEntity.getNonce_str();
-        req.timeStamp = String.valueOf(wchatPayEntity.getTimestamp());
-        req.packageValue = "Sign=WXPay";
-        req.sign = wchatPayEntity.getSign();
-        req.extData = wchatPayEntity.getTrade_type(); // optional
-        // 在支付之前，如果应用没有注册到微信，应该先调用IWXMsg.registerApp将应用注册到微信
-        api.sendReq(req);
-    }
+//    private void onWXPay(WchatPayEntity wchatPayEntity) {
+//        api.registerApp(Constants.WX_APP_ID);
+//        if (!api.isWXAppInstalled()) {
+//            Toast.makeText(MainActivity.this, "没有安装微信", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//        if (!api.isWXAppSupportAPI()) {
+//            Toast.makeText(MainActivity.this, "当前版本不支持支付功能", Toast.LENGTH_SHORT).show();
+//            return;
+//        }
+//        PayReq req = new PayReq();
+//        //req.appId = "wxf8b4f85f3a794e77";  // 测试用appId
+//        //req.appId			= wchatPayEntity.getAppid();
+//        req.appId = wchatPayEntity.getAppid();
+//        req.partnerId = wchatPayEntity.getMch_id();
+//        req.prepayId = wchatPayEntity.getPrepay_id();
+//        req.nonceStr = wchatPayEntity.getNonce_str();
+//        req.timeStamp = String.valueOf(wchatPayEntity.getTimestamp());
+//        req.packageValue = "Sign=WXPay";
+//        req.sign = wchatPayEntity.getSign();
+//        req.extData = wchatPayEntity.getTrade_type(); // optional
+//        // 在支付之前，如果应用没有注册到微信，应该先调用IWXMsg.registerApp将应用注册到微信
+//        api.sendReq(req);
+//    }
 
 
     public class JsInteraction {
@@ -408,7 +476,7 @@ public class MainActivity extends AppCompatActivity {
             if (result != null) {
                 WchatPayEntity wchatPayEntity = new Gson().fromJson(result, WchatPayEntity.class);
                 Constants.WXPAY_RESULT_URL = wchatPayEntity.getReturn_url();
-                onWXPay(wchatPayEntity);
+                //onWXPay(wchatPayEntity);
             }
         }
 
@@ -418,14 +486,14 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
+            super.onProgressChanged(view, newProgress);
+
+            progressBar.setProgress(newProgress);
             if (newProgress == 100) {
                 progressBar.setVisibility(View.GONE);
             } else {
-                if (progressBar.getVisibility() == View.GONE)
-                    progressBar.setVisibility(View.VISIBLE);
-                progressBar.setProgress(newProgress);
+                progressBar.setVisibility(View.VISIBLE);
             }
-            super.onProgressChanged(view, newProgress);
         }
 
 
@@ -489,12 +557,17 @@ public class MainActivity extends AppCompatActivity {
 
     private class MyWebViewClient extends WebViewClient {
 
-
         @Override
         @TargetApi(21)
         public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
             Log.d(TAG, "shouldOverrideUrlLoading start URL[" + request.getUrl().toString() + "]");
             return super.shouldInterceptRequest(view, request);
+        }
+
+        @Override
+        public void onLoadResource(WebView view, String url) {
+            Log.d(TAG, "onLoadResource start URL[" + url + "]");
+            super.onLoadResource(view, url);
         }
 
         @Override

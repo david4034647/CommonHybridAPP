@@ -7,7 +7,10 @@ import android.os.Handler;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
 
+import com.mob.commons.SHARESDK;
 import com.weiba.commonhybridapp.R;
+
+import cn.sharesdk.framework.ShareSDK;
 
 /**
  * Created by david on 17/10/23.

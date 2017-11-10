@@ -1,16 +1,17 @@
 package com.weiba.web.sharelibrary.util;
 
 import android.content.Context;
+import android.util.Log;
 import android.webkit.CookieManager;
 import android.webkit.CookieSyncManager;
-
-import com.umeng.socialize.utils.Log;
 
 /**
  * Created by lidong on 16/9/21.
  */
 
 public class Tools {
+    private final static String TAG = Tools.class.getSimpleName();
+
      /**
      * 同步一下cookie
      */
@@ -27,7 +28,7 @@ public class Tools {
      */
     public static void syncCookie(Context context, String url){
         try{
-            Log.d("Nat: webView.syncCookie.url", url);
+            Log.d(TAG, url);
 
             CookieSyncManager.createInstance(context);
 
@@ -37,7 +38,7 @@ public class Tools {
             cookieManager.removeAllCookie();
             String oldCookie = cookieManager.getCookie(url);
             if(oldCookie != null){
-                Log.d("Nat: webView.syncCookieOutter.oldCookie", oldCookie);
+                Log.d(TAG, "Nat: webView.syncCookieOutter.oldCookie" + oldCookie);
             }
 
             StringBuilder sbCookie = new StringBuilder();
@@ -51,10 +52,10 @@ public class Tools {
 
             String newCookie = cookieManager.getCookie(url);
             if(newCookie != null){
-                Log.d("Nat: webView.syncCookie.newCookie", newCookie);
+                Log.d(TAG, "Nat: webView.syncCookie.newCookie" + newCookie);
             }
         }catch(Exception e){
-            Log.e("Nat: webView.syncCookie failed", e.toString());
+            Log.e(TAG , "Nat: webView.syncCookie failed " + e.toString());
         }
     }
 }
