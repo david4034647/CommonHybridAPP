@@ -1,17 +1,12 @@
 package com.weiba.web.sharelibrary;
 
-import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Matrix;
 import android.graphics.Rect;
-import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
@@ -28,8 +23,8 @@ import com.google.zxing.common.BitMatrix;
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel;
 import com.weiba.web.sharelibrary.fragment.SuccessDialogFragment;
 import com.weiba.web.sharelibrary.util.Constants;
+import com.weiba.web.sharelibrary.util.Tools;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.Hashtable;
 
@@ -45,7 +40,7 @@ public class Twodimnsion extends AppCompatActivity {
     private String url;
     public static int a=1;
     private Button preservation;
-    private static SharedPreferences pref = null;
+
     // Constants
     // ===========================================================
     /**
@@ -100,7 +95,7 @@ public class Twodimnsion extends AppCompatActivity {
                         Bitmap obmp = Bitmap.createBitmap(iv_qr_image.getDrawingCache());
                         if (obmp != null) {
                             iv_qr_image.setDrawingCacheEnabled(false);
-                            saveImageToGallery(Twodimnsion.this, obmp);
+                            Tools.saveImageToGallery(Twodimnsion.this, obmp);
                             showDialog();
                         } else {
                             Toast.makeText(Twodimnsion.this, "保存失败!", Toast.LENGTH_SHORT).show();
@@ -218,38 +213,6 @@ public class Twodimnsion extends AppCompatActivity {
         }
         dialogFragment.show(getSupportFragmentManager(), "Dialog");
 
-    }
-    //图片插入到系统图库
-    public static void saveImageToGallery(Context context, Bitmap bitmap) {
-        if (bitmap == null) {
-            return;
-        }
-        //解决安卓4.4的保存图片bug
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-            if (pref == null) {
-                pref = context.getSharedPreferences("fixMediaDir", context.MODE_PRIVATE);
-            }
-            boolean created = pref.getBoolean("created", false);
-            //没有创建，就手动创建相册
-            if (!created) {
-                File sdcard = Environment.getExternalStorageDirectory();
-                if (sdcard != null) {
-                    File mediaDir = new File(sdcard, "DCIM/Camera");
-                    if (!mediaDir.exists()) {
-                        mediaDir.mkdirs();
-                    }
-                }
-                //修复完成设置标志。
-                SharedPreferences.Editor editor = pref.edit();
-                editor.putBoolean("created", true);
-                editor.commit();
-            }
-        }
-        //把图片插入到系统图库
-        MediaStore.Images.Media.insertImage(context.getContentResolver(),
-                bitmap, null, null);
-        //通知图库更新
-        //sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://" + file.getAbsolutePath())));
     }
 
 }

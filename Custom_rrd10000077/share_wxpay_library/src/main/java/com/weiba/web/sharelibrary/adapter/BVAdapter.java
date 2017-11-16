@@ -73,6 +73,9 @@ public class BVAdapter extends BaseAdapter {
             case "二维码":
                 holder.imageView.setImageDrawable(context.getResources().getDrawable(R.mipmap.zcode));
                 break;
+            default:
+                holder.imageView.setImageDrawable(context.getResources().getDrawable(R.mipmap.zcode));
+                break;
         }
         return convertView;
     }

@@ -5,10 +5,12 @@ import android.graphics.BitmapFactory;
 import android.text.TextUtils;
 import android.util.Base64;
 
-import java.io.UnsupportedEncodingException;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 
 /**
- * Created by Gyueqi on 16/7/14.
+ * Created by david on 16/7/14.
  */
 public class WebShareBean {
 
@@ -76,27 +78,33 @@ public class WebShareBean {
             return;
         }
 
-        String tmpImgStr;
         if (!imgUrl.startsWith("data:image")) {
             this.imgUrl = imgUrl;
+            this.imgBitmap = null;
             return;
 
         }
 
-        int index = imgUrl.indexOf("data:image/png;base64,");
-        tmpImgStr = imgUrl.substring(22);
-        if (TextUtils.isEmpty(tmpImgStr)) {
+        String[] tmpImg = imgUrl.split(",");
+        if (tmpImg == null || tmpImg.length != 2) {
             return;
         }
 
         this.imgDataStr = imgUrl;
-        byte[] imgArray = new byte[0];
+        InputStream stream = null;
         try {
-            imgArray = Base64.decode(tmpImgStr.getBytes("utf-8"), Base64.DEFAULT);
-        } catch (UnsupportedEncodingException e) {
+            stream = new ByteArrayInputStream(Base64.decode(tmpImg[1].getBytes(), Base64.DEFAULT));
+            this.imgBitmap = BitmapFactory.decodeStream(stream);
+        } catch (Exception e) {
             e.printStackTrace();
+        } finally {
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
         }
-        Bitmap imgBitmap = BitmapFactory.decodeByteArray(imgArray, 0, imgArray.length);
-        this.imgBitmap = imgBitmap;
     }
 }

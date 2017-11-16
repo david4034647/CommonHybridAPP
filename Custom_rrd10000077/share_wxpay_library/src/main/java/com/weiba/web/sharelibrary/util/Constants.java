@@ -17,5 +17,6 @@ public class Constants {
     public static final int QRCODE = 1004;
     public static final int SINA = 1005;
     public static final int CLONE_LINK = 1006;
+    public static final int SAVE_PHOTO = 1007;
     public static final int state = 1;
 }

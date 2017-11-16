@@ -3,6 +3,8 @@ package com.weiba.commonhybridapp.activity;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.graphics.Bitmap;
@@ -29,6 +31,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.GridView;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -39,18 +42,23 @@ import com.weiba.web.sharelibrary.adapter.BVAdapter;
 import com.weiba.web.sharelibrary.bean.WchatPayEntity;
 import com.weiba.web.sharelibrary.bean.WebShareBean;
 import com.weiba.web.sharelibrary.util.Constants;
+import com.weiba.web.sharelibrary.util.Tools;
 import com.weiba.web.sharelibrary.util.WebToolUtil;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.HashMap;
 
-import cn.sharesdk.onekeyshare.OnekeyShare;
+import cn.sharesdk.framework.Platform;
+import cn.sharesdk.framework.PlatformActionListener;
+import cn.sharesdk.framework.ShareSDK;
 import cn.sharesdk.wechat.friends.Wechat;
 import cn.sharesdk.wechat.moments.WechatMoments;
 
 public class MainActivity extends AppCompatActivity implements WebView.OnLongClickListener {
     private final static String TAG = MainActivity.class.getSimpleName();
 
+    private ImageView mTestImgView;
     private Toolbar mToolbar;
     private WebView mWebView;
     private ProgressBar progressBar;
@@ -64,10 +72,9 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
     private String WebUrl = "https://shenma.nz/";
     private Runnable mUpdateResults = new Runnable() {
         public void run() {
-            updateUI();
+            shareByType(SHARE_TYPE);
         }
     };
-    private boolean showShare;
     private boolean isNeedReload;
     private Uri imageUri = Uri.EMPTY;
 
@@ -77,7 +84,7 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         setContentView(R.layout.activity_main);
 
         shareBean = new WebShareBean();
-        //WebUrl = "https://www.baidu.com/";
+        //WebUrl = "https://seller.daodian100.com/";
         initView();
     }
 
@@ -142,10 +149,6 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
-            case R.id.action_sharing:
-                //initBottomView();
-                showShareMenu();
-                break;
             case R.id.action_refresh:
                 mWebView.reload();
                 break;
@@ -209,7 +212,10 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         if (type == WebView.HitTestResult.SRC_IMAGE_ANCHOR_TYPE || type == WebView.HitTestResult.IMAGE_TYPE) {
             Log.d(TAG, "hit test result 图片 [" + testResult.getExtra() + "]");
             shareBean.setImgUrl(testResult.getExtra());
-            initBottomView();
+
+            if (shareBean.getImgBitmap() != null) {
+                initBottomView();
+            }
         }
 
         return true;
@@ -220,6 +226,8 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         mToolbar = (Toolbar) this.findViewById(R.id.toolbar);
         setSupportActionBar(mToolbar);
 
+        mTestImgView = (ImageView) findViewById(R.id.test_imgview);
+
         progressBar = (ProgressBar) findViewById(R.id.pb_progress);
 
         mWebView = (WebView) this.findViewById(R.id.webview);
@@ -229,6 +237,7 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
     private void initWebView() {
         mWebView.setHorizontalScrollBarEnabled(false);//水平不显示
         mWebView.setVerticalScrollBarEnabled(false); //垂直不显示
+        //mWebView.setInitialScale(100);
         WebSettings webSettings = mWebView.getSettings();
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             webSettings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
@@ -238,6 +247,7 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         webSettings.setUserAgentString(ua + "; davidWebView");
         webSettings.setGeolocationEnabled(true);
         webSettings.setGeolocationDatabasePath(getFilesDir().getPath());
+        webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         // 开启 DOM storage API 功能
         webSettings.setDomStorageEnabled(true);
         //设置WebView属性，能够执行Javascript脚本
@@ -245,7 +255,8 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         //设置可以访问文件
         webSettings.setAllowFileAccess(true);
         //设置支持缩放
-        webSettings.setBuiltInZoomControls(true);
+        webSettings.setSupportZoom(true);
+        webSettings.setBuiltInZoomControls(false);
 
         webSettings.setJavaScriptCanOpenWindowsAutomatically(true);
         mWebView.addJavascriptInterface(new JsInteraction(), "androidShare");
@@ -257,33 +268,6 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
 
     protected void NetworkOperation() {
         mHandler.post(mUpdateResults);
-    }
-
-    private void updateUI() {
-        switch (SHARE_TYPE) {
-            case Constants.WEIXIN:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.WEIXIN, shareBean);
-                break;
-            case Constants.WEIXIN_CIRCLE:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.WEIXIN_CIRCLE, shareBean);
-                break;
-            case Constants.QQ:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.QQ, shareBean);
-                break;
-            case Constants.QZONE:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.QZONE, shareBean);
-                break;
-            case Constants.QRCODE:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.QRCODE, shareBean);
-                break;
-            case Constants.SINA:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.SINA, shareBean);
-                break;
-            case Constants.CLONE_LINK:
-                WebToolUtil.ShareByType(MainActivity.this, Constants.CLONE_LINK, shareBean);
-                break;
-        }
-
     }
 
     private void onActivityResultAboveL(int requestCode, int resultCode, Intent data) {
@@ -321,12 +305,19 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
     }
 
     private void initBottomView() {
+        if (shareBean == null) {
+            Toast.makeText(this, "无分享内容.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
         final GridView lv_menu_list;
         final ArrayList<String> menus = new ArrayList<>();
         menus.add("微信");
         menus.add("朋友圈");
-        menus.add("复制链接");
-        //menus.add("二维码");
+        if (shareBean.getImgBitmap() != null) {
+            menus.add("保存图片");
+        }
+
         final BottomView bv = new BottomView(this,
                 R.style.BottomViewTheme_Default, R.layout.bottom_view);
         bv.setAnimation(R.style.BottomToTopAnim);//设置动画，可选
@@ -338,96 +329,130 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
                 switch (menus.get(position)) {
                     case "朋友圈":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.WEIXIN_CIRCLE;
                         break;
                     case "微信":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.WEIXIN;
                         break;
                     case "QQ空间":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.QZONE;
                         break;
                     case "QQ":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.QQ;
                         break;
                     case "新浪微博":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.SINA;
                         break;
                     case "复制链接":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.CLONE_LINK;
                         break;
                     case "二维码":
-                        mWebView.loadUrl("javascript:getShareInfo()");
+
                         SHARE_TYPE = Constants.QRCODE;
                         break;
+
+                    case "保存图片":
+
+                        SHARE_TYPE = Constants.SAVE_PHOTO;
+                        break;
                 }
-                shareByType(SHARE_TYPE);
+                NetworkOperation();
                 bv.dismissBottomView();
             }
         });
     }
 
     private void shareByType(int shareType) {
-        OnekeyShare oks = new OnekeyShare();
+
+        if (Tools.saveImg2CacheDir(MainActivity.this, shareBean.getImgBitmap())) {
+            shareBean.setImgDataStr(getCacheDir() + "/tmp.jpg");
+        } else {
+            shareBean.setImgDataStr(null);
+        }
+
+        Platform.ShareParams sp = new Platform.ShareParams();
+        if (!TextUtils.isEmpty(shareBean.getImgDataStr())) {
+            sp.setImagePath(shareBean.getImgDataStr());
+            sp.setShareType(Platform.SHARE_IMAGE);
+        } else {
+            sp.setImagePath(shareBean.getImgUrl());
+            sp.setShareType(Platform.SHARE_WEBPAGE);
+        }
+        sp.setTitle(shareBean.getTitle());
+        sp.setUrl(shareBean.getImgUrl());
+
         switch (shareType) {
             case Constants.WEIXIN_CIRCLE:
-                oks.setImageUrl(shareBean.getImgUrl());
-                oks.setImageData(shareBean.getImgDataStr());
-                oks.setTitleUrl(shareBean.getLink());
-                oks.setText("text");
-                oks.setTitle("标题");
+                Platform wechatMoments = ShareSDK.getPlatform(WechatMoments.NAME);
+                wechatMoments.setPlatformActionListener(new PlatformActionListener() {
+                    @Override
+                    public void onComplete(Platform platform, int i, HashMap<String, Object> hashMap) {
+                        Log.d(TAG, "wechatMoments onComplete start ...");
+                        Toast.makeText(MainActivity.this,"分享成功.",Toast.LENGTH_SHORT).show();
+                    }
 
-                oks.setPlatform(WechatMoments.NAME);
-                oks.show(MainActivity.this);
+                    @Override
+                    public void onError(Platform platform, int i, Throwable throwable) {
+                        Log.d(TAG, "wechatMoments onError start ...");
+                        Toast.makeText(MainActivity.this,"分享失败.",Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onCancel(Platform platform, int i) {
+                        Log.d(TAG, "wechatMoments onCancel start ...");
+                    }
+                });
+                wechatMoments.share(sp);
+
                 break;
             case Constants.WEIXIN:
-                oks.setImageUrl(shareBean.getImgUrl());
-                oks.setImageData(shareBean.getImgDataStr());
-                oks.setTitleUrl(shareBean.getLink());
-                oks.setText("text");
-                oks.setTitle("标题");
+                Platform wechat = ShareSDK.getPlatform(Wechat.NAME);
+                wechat.setPlatformActionListener(new PlatformActionListener() {
+                    @Override
+                    public void onComplete(Platform platform, int i, HashMap<String, Object> hashMap) {
+                        Log.d(TAG, "wechat onComplete start ...");
+                        Toast.makeText(MainActivity.this,"分享成功.",Toast.LENGTH_SHORT).show();
+                    }
 
-                oks.setPlatform(Wechat.NAME);
-                oks.show(MainActivity.this);
+                    @Override
+                    public void onError(Platform platform, int i, Throwable throwable) {
+                        Log.d(TAG, "wechat onError start ...");
+                        Toast.makeText(MainActivity.this,"分享失败.",Toast.LENGTH_SHORT).show();
+                    }
 
+                    @Override
+                    public void onCancel(Platform platform, int i) {
+                        Log.d(TAG, "wechat onCancel start ...");
+                    }
+                });
+                wechat.share(sp);
+
+                break;
+            case Constants.SAVE_PHOTO:
+                String url = Tools.saveImageToGallery(MainActivity.this, shareBean.getImgBitmap());
+                if (!TextUtils.isEmpty(url)) {
+                    Toast.makeText(MainActivity.this, "保存图片成功.", Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(MainActivity.this, "保存图片失败.", Toast.LENGTH_SHORT).show();
+                }
+
+                break;
+            case Constants.CLONE_LINK:
+                ClipboardManager cmb = (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+                cmb.setText(shareBean.getImgUrl());
+                Toast.makeText(this,"复制成功.",Toast.LENGTH_SHORT).show();
                 break;
             default:
                 break;
         }
 
-    }
 
-    private void showShareMenu() {
-        OnekeyShare oks = new OnekeyShare();
-        //关闭sso授权
-        oks.disableSSOWhenAuthorize();
-
-        // 分享时Notification的图标和文字  2.5.9以后的版本不调用此方法
-        //oks.setNotification(R.drawable.ic_launcher, getString(R.string.app_name));
-        // title标题，印象笔记、邮箱、信息、微信、人人网和QQ空间使用
-        oks.setTitle("ShareSDK分享");
-        // titleUrl是标题的网络链接，仅在人人网和QQ空间使用
-        oks.setTitleUrl("https://www.sharesdk.cn");
-        // text是分享文本，所有平台都需要这个字段
-        oks.setText("我是分享文本");
-        // imagePath是图片的本地路径，Linked-In以外的平台都支持此参数
-        //oks.setImagePath("/sdcard/test.jpg");//确保SDcard下面存在此张图片
-        // url仅在微信（包括好友和朋友圈）中使用
-        oks.setUrl("https://www.sharesdk.cn");
-        // comment是我对这条分享的评论，仅在人人网和QQ空间使用
-        oks.setComment("我是测试评论文本");
-        // site是分享此内容的网站名称，仅在QQ空间使用
-        oks.setSite(getString(R.string.app_name));
-        // siteUrl是分享此内容的网站地址，仅在QQ空间使用
-        oks.setSiteUrl("https://www.sharesdk.cn");
-
-        // 启动分享GUI
-        oks.show(this);
     }
 
     /**
@@ -486,14 +511,17 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
 
         @Override
         public void onProgressChanged(WebView view, int newProgress) {
-            super.onProgressChanged(view, newProgress);
-
-            progressBar.setProgress(newProgress);
             if (newProgress == 100) {
                 progressBar.setVisibility(View.GONE);
             } else {
-                progressBar.setVisibility(View.VISIBLE);
+                if (progressBar.getVisibility() == View.GONE) {
+                    progressBar.setVisibility(View.VISIBLE);
+                }
+
+                progressBar.setProgress(newProgress);
             }
+
+            super.onProgressChanged(view, newProgress);
         }
 
 
@@ -526,6 +554,10 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         public void onReceivedTitle(WebView view, String title) {
             super.onReceivedTitle(view, title);
             mToolbar.setTitle(title);
+            if (shareBean != null) {
+                shareBean.setTitle(title);
+                shareBean.setDesc(title);
+            }
         }
 
         @Override

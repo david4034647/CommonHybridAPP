@@ -31,4 +31,9 @@
         android:max="100"
         android:progressDrawable="@drawable/progress" />
 
+    <ImageView
+        android:id="@+id/test_imgview"
+        android:layout_width="100dp"
+        android:layout_height="100dp" />
+
 </RelativeLayout>

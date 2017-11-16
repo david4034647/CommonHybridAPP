@@ -1,6 +1,9 @@
 apply plugin: 'com.android.application'
 
 android {
+    lintOptions {
+        checkReleaseBuilds false
+    }
     signingConfigs {
         config {
             keyAlias 'key0'
