@@ -148,6 +148,10 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        Toast.makeText(this, "热更新完成xxxxxxxxxxxxxxxxxxx", Toast.LENGTH_SHORT).show();
+        BugClass bug = new BugClass();
+        bug.bugTest(MainActivity.this);
+
         switch (item.getItemId()) {
             case R.id.action_refresh:
                 mWebView.reload();
