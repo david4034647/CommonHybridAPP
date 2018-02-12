@@ -76,7 +76,6 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         }
     };
     private boolean isNeedReload;
-    private Uri imageUri = Uri.EMPTY;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -124,9 +123,14 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
+        Log.d(TAG, "onActivityResult start ... resultCode[" + resultCode +"]");
 
-        if (requestCode != 1) {
+        if (requestCode != WebToolUtil.FILECHOOSER_RESULTCODE) {
             return;
+        }
+
+        if (resultCode == RESULT_CANCELED) {
+            WebToolUtil.mImageUri = Uri.EMPTY;
         }
 
         if (null == mUploadMessage && null == mUploadCallbackAboveL) return;
@@ -275,37 +279,34 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
     }
 
     private void onActivityResultAboveL(int requestCode, int resultCode, Intent data) {
-        if (requestCode != 1 || mUploadCallbackAboveL == null) {
+        if (requestCode != WebToolUtil.FILECHOOSER_RESULTCODE || mUploadCallbackAboveL == null) {
             return;
         }
+
         Uri[] results = null;
-        if (resultCode == Activity.RESULT_OK) {
-            if (data == null) {
-                results = new Uri[]{imageUri};
-            } else {
-                String dataString = data.getDataString();
-                ClipData clipData = data.getClipData();
+        if (resultCode == Activity.RESULT_OK && data != null) {
+            String dataString = data.getDataString();
+            ClipData clipData = data.getClipData();
 
-                if (clipData != null) {
-                    results = new Uri[clipData.getItemCount()];
-                    for (int i = 0; i < clipData.getItemCount(); i++) {
-                        ClipData.Item item = clipData.getItemAt(i);
-                        results[i] = item.getUri();
-                    }
+            if (clipData != null) {
+                results = new Uri[clipData.getItemCount()];
+                for (int i = 0; i < clipData.getItemCount(); i++) {
+                    ClipData.Item item = clipData.getItemAt(i);
+                    results[i] = item.getUri();
                 }
+            }
 
-                if (dataString != null)
-                    results = new Uri[]{Uri.parse(dataString)};
+            if (!TextUtils.isEmpty(dataString)) {
+                results = new Uri[]{Uri.parse(dataString)};
             }
         }
-        if (results != null) {
-            mUploadCallbackAboveL.onReceiveValue(results);
-            mUploadCallbackAboveL = null;
-        } else {
-            results = new Uri[]{imageUri};
-            mUploadCallbackAboveL.onReceiveValue(results);
-            mUploadCallbackAboveL = null;
+
+        if (results == null) {
+            results = new Uri[]{WebToolUtil.mImageUri};
         }
+
+        mUploadCallbackAboveL.onReceiveValue(results);
+        mUploadCallbackAboveL = null;
     }
 
     private void initBottomView() {
@@ -532,26 +533,26 @@ public class MainActivity extends AppCompatActivity implements WebView.OnLongCli
         @Override
         public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, FileChooserParams fileChooserParams) {
             mUploadCallbackAboveL = filePathCallback;
-            WebToolUtil.TakePhoto(MainActivity.this, imageUri);
+            WebToolUtil.TakePhoto(MainActivity.this, null);
             return true;
         }
 
         // For Android 4.1
         public void openFileChooser(ValueCallback<Uri> uploadMsg) {
             mUploadMessage = uploadMsg;
-            WebToolUtil.TakePhoto(MainActivity.this, imageUri);
+            WebToolUtil.TakePhoto(MainActivity.this, null);
         }
 
         // For Android 3.0+
         public void openFileChooser(ValueCallback uploadMsg, String acceptType) {
             mUploadMessage = uploadMsg;
-            WebToolUtil.TakePhoto(MainActivity.this, imageUri);
+            WebToolUtil.TakePhoto(MainActivity.this, null);
         }
 
         // For Android 3.0-
         public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
             mUploadMessage = uploadMsg;
-            WebToolUtil.TakePhoto(MainActivity.this, imageUri);
+            WebToolUtil.TakePhoto(MainActivity.this, null);
         }
 
         @Override

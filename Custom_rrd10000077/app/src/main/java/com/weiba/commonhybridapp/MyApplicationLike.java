@@ -1,3 +1,5 @@
+package com.weiba.commonhybridapp;
+
 import android.annotation.TargetApi;
 import android.app.Application;
 import android.content.Context;

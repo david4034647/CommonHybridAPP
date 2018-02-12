@@ -13,7 +13,7 @@ def baseApkDir = "app-1122-19-33-56"
 tinkerSupport {
 
     // 开启tinker-support插件，默认值true
-    enable = true
+    enable = false
 
     // 指定归档目录，默认值当前module的子目录tinker
     autoBackupApkDir = "${bakPath}"

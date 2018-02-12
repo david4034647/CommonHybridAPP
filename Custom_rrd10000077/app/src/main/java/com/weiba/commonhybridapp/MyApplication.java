@@ -125,7 +125,7 @@ public class MyApplication extends MobApplication {
         MultiDex.install(base);
 
         // 安装tinker
-        Beta.installTinker();
+        //Beta.installTinker();
     }
 
 }

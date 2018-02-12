@@ -6,9 +6,11 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Environment;
 import android.os.Parcelable;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 
 import com.weiba.web.sharelibrary.bean.WebShareBean;
 
@@ -21,7 +23,9 @@ import java.util.List;
  * Created by Gyueqi on 16/7/14.
  */
 public class WebToolUtil {
-    private final static int FILECHOOSER_RESULTCODE = 1;
+    public final static int FILECHOOSER_RESULTCODE = 1;
+
+    public static Uri mImageUri = Uri.EMPTY;
 
     public static void ShareByType(Activity ac, int type, WebShareBean shareBean) {
         if (shareBean.getDesc().equals("")) {
@@ -149,13 +153,25 @@ public class WebToolUtil {
      * 调用选择手机相册和摄像头界面
      */
     public static void TakePhoto(Activity ac, Uri imageUri) {
+        if (ac == null) {
+            return;
+        }
+
         File imageStorageDir = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES), "MyApp");
         // Create the storage directory if it does not exist
         if (!imageStorageDir.exists()) {
             imageStorageDir.mkdirs();
         }
-        File file = new File(imageStorageDir + File.separator + "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg");
-        imageUri = Uri.fromFile(file);
+
+        File newFile = new File(imageStorageDir + File.separator + "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg");
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            //File imgPath = new File(ac.getFilesDir(), "images");
+            newFile = new File(imageStorageDir, "IMG_" + String.valueOf(System.currentTimeMillis()) + ".jpg");
+            mImageUri = FileProvider.getUriForFile(ac.getApplicationContext(), "com.weiba.commonhybridapp.fileprovider", newFile);
+        } else {
+            mImageUri = Uri.fromFile(newFile);
+        }
 
         final List<Intent> cameraIntents = new ArrayList<Intent>();
         final Intent captureIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -166,10 +182,10 @@ public class WebToolUtil {
             final Intent i = new Intent(captureIntent);
             i.setComponent(new ComponentName(res.activityInfo.packageName, res.activityInfo.name));
             i.setPackage(packageName);
-            i.putExtra(MediaStore.EXTRA_OUTPUT, imageUri);
+            i.putExtra(MediaStore.EXTRA_OUTPUT, mImageUri);
             cameraIntents.add(i);
-
         }
+
         Intent i = new Intent(Intent.ACTION_GET_CONTENT);
         i.addCategory(Intent.CATEGORY_OPENABLE);
         i.setType("image/*");
